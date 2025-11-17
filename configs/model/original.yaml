@@ -1,0 +1,9 @@
+defaults:
+  - _self_
+
+name: original
+
+init:
+  _target_: models.OLDGCN
+  _partial_: false
+  num_node_features: 11

@@ -1,0 +1,18 @@
+[project]
+name = "drug-discovery"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    'importlib-metadata; python_version <= "3.12"',
+    "numpy",
+    "torch",
+    "torchvision",
+    "typer",
+    "rich",
+    "hydra-core",
+    "wandb>=0.23.0",
+    "pytorch-lightning>=2.5.6",
+    "torch-geometric>=2.7.0",
+]
