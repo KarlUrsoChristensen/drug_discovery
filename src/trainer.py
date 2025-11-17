@@ -25,6 +25,7 @@ class SemiSupervisedEnsemble:
         self.scheduler = scheduler(optimizer=self.optimizer)
 
         # Dataloader setup
+        self.unsupervised_train_dataloader = datamodule.unsupervised_train_dataloader()
         self.train_dataloader = datamodule.train_dataloader()
         self.val_dataloader = datamodule.val_dataloader()
         self.test_dataloader = datamodule.test_dataloader()
