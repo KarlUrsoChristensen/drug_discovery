@@ -1,0 +1,48 @@
+# @package _global_
+
+defaults:
+  - dataset: qm9
+  - trainer: semi-supervised-ensemble
+  - model: mat
+  - logger: wandb
+  - override /hydra/sweeper: optuna
+
+logger:
+  disable: true
+
+seed: 0
+device: unset
+force_deterministic: False
+compile_model: false
+
+hydra:
+  sweep:
+    dir: /dtu/blackhole/0a/224426/hydra_outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    subdir: ${hydra.job.num}
+  
+  sweeper:
+    _target_: hydra_plugins.hydra_optuna_sweeper.optuna_sweeper.OptunaSweeper
+    
+    direction: minimize
+    storage: null
+    study_name: lr_sweep_mat
+    
+    n_trials: 100
+    n_jobs: 1
+    
+    sampler:
+      _target_: optuna.samplers.TPESampler
+      seed: 42
+      n_startup_trials: 10
+    
+    params:
+      trainer.init.optimizer.lr: tag(log, interval(0.0001, 0.01))
+      trainer.init.optimizer.weight_decay: interval(0.001, 0.01)
+      trainer.init.scheduler.gamma: interval(0.95, 0.99)  # FIX: scheduler ikke optimizer
+      model.init.hidden_channels: choice(32, 64, 128, 256)
+      model.init.num_layers: choice(5, 6, 7)
+      model.init.dropout: interval(0.0, 0.3)
+      seed: 0
+
+  mode: MULTIRUN
+  verbose: true

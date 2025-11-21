@@ -1,4 +1,3 @@
-
 from itertools import chain
 import hydra
 import torch
@@ -36,9 +35,11 @@ def main(cfg):
     models = [model]
     trainer = hydra.utils.instantiate(cfg.trainer.init, models=models, logger=logger, datamodule=dm, device=device)
 
-    results = trainer.train(**cfg.trainer.train) # does not return anything
-    # results = torch.Tensor(results)
-
+    # Train and get final validation MSE
+    final_val_mse = trainer.train(**cfg.trainer.train)
+    
+    # Return MSE for Optuna sweeper
+    return final_val_mse
 
 
 if __name__ == "__main__":

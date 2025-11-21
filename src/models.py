@@ -90,3 +90,55 @@ class OLDGCN(torch.nn.Module):
         x = self.linear(x)
 
         return x
+    
+class MatGCN(torch.nn.Module):
+    def __init__(self, num_node_features, hidden_channels, num_layers, dropout):
+        super(MatGCN, self).__init__()
+        self.num_layers = num_layers
+        self.dropout = dropout
+        
+        # Create conv and norm layers dynamically
+        self.convs = torch.nn.ModuleList()
+        self.norms = torch.nn.ModuleList()
+        
+        # First layer
+        self.convs.append(GCNConv(num_node_features, hidden_channels))
+        self.norms.append(torch.nn.LayerNorm(hidden_channels))
+        
+        # Remaining layers (all hidden_channels -> hidden_channels)
+        for _ in range(num_layers - 1):
+            self.convs.append(GCNConv(hidden_channels, hidden_channels))
+            self.norms.append(torch.nn.LayerNorm(hidden_channels))
+        
+        self.linear = torch.nn.Linear(hidden_channels, 1)
+
+    def forward(self, data):
+        x, edge_index, batch = data.x, data.edge_index, data.batch
+
+        # First layer (no skip connection - different dimensions)
+        x = self.convs[0](x, edge_index)
+        x = self.norms[0](x)
+        x = x.relu()
+        x = F.dropout(x, p=self.dropout, training=self.training)
+        
+        # Remaining layers with skip connections
+        for i in range(1, self.num_layers):
+            x_prev = x
+            x = self.convs[i](x, edge_index)
+            x = self.norms[i](x)
+            
+            # Skip connection
+            x = x + x_prev
+            
+            # ReLU (except for last layer if you want)
+            if i < self.num_layers - 1:
+                x = x.relu()
+                x = F.dropout(x, p=self.dropout, training=self.training)
+
+        # Readout layer
+        x = global_mean_pool(x, batch)
+
+        # Final classifier
+        x = self.linear(x)
+
+        return x

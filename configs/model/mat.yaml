@@ -1,0 +1,12 @@
+
+defaults:
+  - _self_
+
+name: mat
+init:
+  _target_: models.MatGCN
+  _partial_: false
+  num_node_features: 11
+  hidden_channels: 128
+  num_layers: 6
+  dropout: 0.1
