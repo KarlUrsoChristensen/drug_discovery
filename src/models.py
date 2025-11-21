@@ -91,6 +91,85 @@ class OLDGCN(torch.nn.Module):
 
         return x
     
+class MathildeGCN(torch.nn.Module):
+    def __init__(self, num_node_features, hidden_channels):
+        super(MathildeGCN, self).__init__()
+        self.conv1 = GCNConv(num_node_features, hidden_channels)
+        self.conv2 = GCNConv(hidden_channels, hidden_channels)
+        self.conv3 = GCNConv(hidden_channels, hidden_channels)
+        self.conv4 = GCNConv(hidden_channels, hidden_channels)
+        self.conv5 = GCNConv(hidden_channels, hidden_channels)
+        self.conv6 = GCNConv(hidden_channels, hidden_channels)
+        self.conv7 = GCNConv(hidden_channels, hidden_channels)
+        
+        # Add Layer Normalization after each conv layer
+        self.norm1 = torch.nn.LayerNorm(hidden_channels)
+        self.norm2 = torch.nn.LayerNorm(hidden_channels)
+        self.norm3 = torch.nn.LayerNorm(hidden_channels)
+        self.norm4 = torch.nn.LayerNorm(hidden_channels)
+        self.norm5 = torch.nn.LayerNorm(hidden_channels)
+        self.norm6 = torch.nn.LayerNorm(hidden_channels)
+        self.norm7 = torch.nn.LayerNorm(hidden_channels)
+
+        self.linear = torch.nn.Linear(hidden_channels, 1)
+
+    def forward(self, data):
+        x, edge_index, batch = data.x, data.edge_index, data.batch
+
+        # Layer 1: No skip connection (different input dimension)
+        x = self.conv1(x, edge_index)
+        x = self.norm1(x)
+        x = x.relu()
+        
+        # Layer 2: With skip connection
+        x_prev = x
+        x = self.conv2(x, edge_index)
+        x = self.norm2(x)
+        x = x.relu()
+        x = x + x_prev  # Skip connection
+        
+        # Layer 3: With skip connection
+        x_prev = x
+        x = self.conv3(x, edge_index)
+        x = self.norm3(x)
+        x = x.relu()
+        x = x + x_prev  # Skip connection
+        
+        # Layer 4: With skip connection
+        x_prev = x
+        x = self.conv4(x, edge_index)
+        x = self.norm4(x)
+        x = x.relu()
+        x = x + x_prev  # Skip connection
+        
+        # Layer 5: With skip connection
+        x_prev = x
+        x = self.conv5(x, edge_index)
+        x = self.norm5(x)
+        x = x.relu()
+        x = x + x_prev  # Skip connection
+        
+        # Layer 6: With skip connection
+        x_prev = x
+        x = self.conv6(x, edge_index)
+        x = self.norm6(x)
+        x = x.relu()
+        x = x + x_prev  # Skip connection
+        
+        # Layer 7: With skip connection (no relu after last layer)
+        x_prev = x
+        x = self.conv7(x, edge_index)
+        x = self.norm7(x)
+        x = x + x_prev  # Skip connection
+
+        # Readout layer
+        x = global_mean_pool(x, batch)
+
+        # Final classifier
+        x = self.linear(x)
+
+        return x
+    
 class MatGCN(torch.nn.Module):
     def __init__(self, num_node_features, hidden_channels, num_layers, dropout):
         super(MatGCN, self).__init__()
