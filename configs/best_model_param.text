@@ -1,0 +1,7 @@
+trainer.init.optimizer.lr: 0.008019380847234798
+trainer.init.optimizer.weight_decay: 0.0068404540674212744
+trainer.init.scheduler.gamma: 0.9899584023212821
+model.init.hidden_channels: 256
+model.init.num_layers: 7
+model.init.dropout: 0.13883204668524474
+best_value: 0.045864351625953405
