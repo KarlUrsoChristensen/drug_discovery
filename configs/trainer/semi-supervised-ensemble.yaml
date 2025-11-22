@@ -14,12 +14,12 @@ init:
   optimizer:
     _target_: torch.optim.AdamW
     _partial_: true
-    lr: 0.1
-    weight_decay: 0.005
+    lr: 0.008019380847234798
+    weight_decay: 0.0068404540674212744
   scheduler:
     _target_: torch.optim.lr_scheduler.StepLR
     _partial_: true
     step_size: 1
-    gamma: 0.99
+    gamma: 0.9899584023212821
 
     
