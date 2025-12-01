@@ -7,5 +7,5 @@ name: ${model.name}_seed=${seed} # Name of the run for wandb
 job_type: test
 entity: bnns-for-molecules
 project_name: semi-supervised-ensembles
-disable: false
+disable: true
 local_dir: ./logs #Directory to save logs

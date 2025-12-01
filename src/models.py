@@ -69,7 +69,7 @@ class GCN(torch.nn.Module):
 
 
 class OLDGCN(torch.nn.Module):
-    def __init__(self, num_node_features, hidden_channels=64):
+    def __init__(self, num_node_features, hidden_channels=256):
         super(OLDGCN, self).__init__()
         self.conv1 = GCNConv(num_node_features, hidden_channels)
         self.conv2 = GCNConv(hidden_channels, hidden_channels)
@@ -87,6 +87,72 @@ class OLDGCN(torch.nn.Module):
         x = global_mean_pool(x, batch)  # [batch_size, hidden_channels]
 
         # 3. Apply a final classifier
+        x = self.linear(x)
+
+        return x
+
+class OLDGCNWithNorm(torch.nn.Module):
+    def __init__(self, num_node_features, hidden_channels=256):
+        super(OLDGCNWithNorm, self).__init__()
+        self.conv1 = GCNConv(num_node_features, hidden_channels)
+        self.conv2 = GCNConv(hidden_channels, hidden_channels)
+        
+        # Add Layer Normalization
+        self.norm1 = torch.nn.LayerNorm(hidden_channels)
+        self.norm2 = torch.nn.LayerNorm(hidden_channels)
+        
+        self.linear = torch.nn.Linear(hidden_channels, 1)
+
+    def forward(self, data):
+        x, edge_index, batch = data.x, data.edge_index, data.batch
+
+        # 1. Obtain node embeddings
+        x = self.conv1(x, edge_index)
+        x = self.norm1(x)  # LayerNorm after conv1
+        x = x.relu()
+        
+        x = self.conv2(x, edge_index)
+        x = self.norm2(x)  # LayerNorm after conv2
+
+        # 2. Readout layer
+        x = global_mean_pool(x, batch)
+
+        # 3. Apply a final classifier
+        x = self.linear(x)
+
+        return x
+
+class OLDGCNWithNormAndSkip(torch.nn.Module):
+    def __init__(self, num_node_features, hidden_channels=256):
+        super(OLDGCNWithNormAndSkip, self).__init__()
+        self.conv1 = GCNConv(num_node_features, hidden_channels)
+        self.conv2 = GCNConv(hidden_channels, hidden_channels)
+        
+        # Layer Normalization
+        self.norm1 = torch.nn.LayerNorm(hidden_channels)
+        self.norm2 = torch.nn.LayerNorm(hidden_channels)
+        
+        self.linear = torch.nn.Linear(hidden_channels, 1)
+
+    def forward(self, data):
+        x, edge_index, batch = data.x, data.edge_index, data.batch
+
+        # Layer 1: No skip connection (different dimensions)
+        x = self.conv1(x, edge_index)
+        x = self.norm1(x)
+        x = x.relu()
+        
+        # Layer 2: With skip connection
+        x_prev = x
+        x = self.conv2(x, edge_index)
+        x = self.norm2(x)
+        x = x + x_prev  # Skip connection
+        # No ReLU after skip connection (optional choice)
+
+        # Readout layer
+        x = global_mean_pool(x, batch)
+
+        # Final classifier
         x = self.linear(x)
 
         return x
@@ -171,10 +237,9 @@ class MathildeGCN(torch.nn.Module):
         return x
     
 class MatGCN(torch.nn.Module):
-    def __init__(self, num_node_features, hidden_channels, num_layers, dropout):
+    def __init__(self, num_node_features, hidden_channels, num_layers):
         super(MatGCN, self).__init__()
         self.num_layers = num_layers
-        self.dropout = dropout
         
         # Create conv and norm layers dynamically
         self.convs = torch.nn.ModuleList()
@@ -198,7 +263,6 @@ class MatGCN(torch.nn.Module):
         x = self.convs[0](x, edge_index)
         x = self.norms[0](x)
         x = x.relu()
-        x = F.dropout(x, p=self.dropout, training=self.training)
         
         # Remaining layers with skip connections
         for i in range(1, self.num_layers):
@@ -212,7 +276,6 @@ class MatGCN(torch.nn.Module):
             # ReLU (except for last layer if you want)
             if i < self.num_layers - 1:
                 x = x.relu()
-                x = F.dropout(x, p=self.dropout, training=self.training)
 
         # Readout layer
         x = global_mean_pool(x, batch)

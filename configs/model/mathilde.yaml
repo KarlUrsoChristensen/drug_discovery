@@ -1,0 +1,10 @@
+defaults:
+  - _self_
+
+name: mathilde
+
+init:
+  _target_: models.MathildeGCN
+  _partial_: false
+  num_node_features: 11
+  hidden_channels: 64 

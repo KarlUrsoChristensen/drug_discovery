@@ -1,0 +1,9 @@
+defaults:
+  - _self_
+
+name: original_norm_skip
+
+init:
+  _target_: models.OLDGCNWithNormAndSkip 
+  _partial_: false
+  num_node_features: 11

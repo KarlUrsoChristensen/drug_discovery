@@ -1,0 +1,9 @@
+defaults:
+  - _self_
+
+name: original_norm
+
+init:
+  _target_: models.OLDGCNWithNorm
+  _partial_: false
+  num_node_features: 11

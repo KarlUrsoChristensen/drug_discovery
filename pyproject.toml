@@ -15,4 +15,8 @@ dependencies = [
     "wandb>=0.23.0",
     "pytorch-lightning>=2.5.6",
     "torch-geometric>=2.7.0",
+    "hydra-optuna-sweeper>=1.2.0",
 ]
+
+
+

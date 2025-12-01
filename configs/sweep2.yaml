@@ -1,0 +1,60 @@
+# @package _global_
+
+defaults:
+  - dataset: qm9
+  - trainer: semi-supervised-ensemble
+  - model: mathilde
+  - logger: wandb
+  - override /hydra/sweeper: optuna
+
+logger:
+  disable: true
+
+# Best parameters found from supervised learning sweep
+trainer:
+  init:
+    optimizer:
+      lr: 0.008019380847234798  # Your best lr
+      weight_decay: 0.0068404540674212744  # Your best weight_decay
+    scheduler:
+      gamma: 0.9899584023212821  # Your best gamma
+  train:
+    alpha: 0.995  # Default, will sweep over this
+    unlabeled_per_labeled: 1  # Default, will sweep over this
+
+model:
+  init:
+    hidden_channels: 128  # Your best hidden_channels
+
+seed: 0
+device: unset
+force_deterministic: False
+compile_model: false
+result_dir: /dtu/blackhole/0a/224426/runs/sweep_results
+
+hydra:
+  sweep:
+    dir: /dtu/blackhole/0a/224426/hydra_outputs/semi_supervised/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    subdir: ${hydra.job.num}
+  
+  sweeper:
+    _target_: hydra_plugins.hydra_optuna_sweeper.optuna_sweeper.OptunaSweeper
+    
+    direction: minimize
+    storage: null
+    study_name: semi_supervised_sweep_mathilde
+    
+    n_trials: 50
+    n_jobs: 1
+    
+    sampler:
+      _target_: optuna.samplers.TPESampler
+      seed: 42
+      n_startup_trials: 5
+    
+    params:
+      trainer.train.alpha: interval(0.9, 0.999)
+      trainer.train.unlabeled_per_labeled: choice(0, 1, 2, 3, 4)
+
+  mode: MULTIRUN
+  verbose: true
