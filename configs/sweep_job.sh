@@ -20,4 +20,4 @@ source /dtu/blackhole/0a/224426/drug_discovery_env/bin/activate
 cd /zhome/e2/6/224426/project/drug_discovery/src
 
 # Kør sweep med alle outputs til blackhole
-python run.py --config-name=sweep3 --multirun \
+python run.py --config-name=sweep --multirun \

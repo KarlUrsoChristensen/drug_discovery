@@ -8,5 +8,5 @@ init:
   _partial_: false
   num_node_features: 11
   hidden_channels: 256
-  num_layers: 7
-  dropout: 0.13883204668524474
+  num_layers: 2
+  dropout: 0.1

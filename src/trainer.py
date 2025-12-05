@@ -18,9 +18,11 @@ class SemiSupervisedEnsemble:
         models,
         logger,
         datamodule,
+        result_dir="outputs/mse_results",
     ):
         self.device = device
         self.models = models
+        self.result_dir = result_dir 
 
         # Optim related things
         self.supervised_criterion = supervised_criterion
@@ -56,9 +58,23 @@ class SemiSupervisedEnsemble:
         val_loss = np.mean(val_losses)
         return {"val_MSE": val_loss}
 
-    def train(self, total_epochs, validation_interval):
+    def train(self, total_epochs, validation_interval, trial_hyperparams=None):
+        """
+        Train the ensemble model
+        
+        Args:
+            total_epochs: Number of epochs to train
+            validation_interval: How often to validate
+            trial_hyperparams: Dict with hyperparameters for this trial
+                {
+                    'lr': float,
+                    'weight_decay': float,
+                    'scheduler_gamma': float,
+                    'hidden_channels': int
+                }
+        """
         # Create results directory
-        results_dir = Path("outputs/mse_results")
+        results_dir = Path(self.result_dir) 
         results_dir.mkdir(parents=True, exist_ok=True)
 
         # Initialize results list for saving all epochs
@@ -99,6 +115,11 @@ class SemiSupervisedEnsemble:
                     "val_MSE": float(val_metrics['val_MSE']),
                     "supervised_loss": float(supervised_losses_logged)
                 }
+                
+                # Add trial hyperparameters if provided
+                if trial_hyperparams is not None:
+                    epoch_result.update(trial_hyperparams)
+                
                 all_results.append(epoch_result)
                 
                 # Save to text file (append mode)
@@ -119,7 +140,6 @@ class SemiSupervisedEnsemble:
         return final_val_mse
 
 
-
 class MeanTeacherEnsemble:
     def __init__(
         self,
@@ -131,10 +151,12 @@ class MeanTeacherEnsemble:
         models,
         logger,
         datamodule,
+        result_dir="outputs/mse_results",
     ):
         self.device = device
         self.student_models = models
         self.teacher_models = copy.deepcopy(self.student_models)
+        self.result_dir = result_dir
 
         # Optim related things
         self.supervised_criterion = supervised_criterion
@@ -182,14 +204,16 @@ class MeanTeacherEnsemble:
         val_loss = np.mean(val_losses)
         return {"val_MSE": val_loss}
 
-    def train(self, total_epochs, validation_interval, alpha, unlabeled_per_labeled):
+    def train(self, total_epochs, validation_interval, alpha, unlabeled_per_labeled, trial_hyperparams=None):
         # Create results directory
-        results_dir = Path("outputs/mse_results")
+        results_dir = Path(self.result_dir) 
         results_dir.mkdir(parents=True, exist_ok=True)
 
         # Initialize results list for saving all epochs
         all_results = []
         final_val_mse = None  # Track final validation MSE for Optuna
+
+        # Add trial hyperparameters if provided
         
         for epoch in (pbar := tqdm(range(1, total_epochs + 1))):
             for student_model, teacher_model in zip(self.student_models, self.teacher_models):
@@ -201,6 +225,7 @@ class MeanTeacherEnsemble:
             supervised_losses_logged = []
             unsupervised_losses_logged = []
             losses_logged = []
+            
             for x, targets in self.train_dataloader:
                 x, targets = x.to(self.device), targets.to(self.device)
                 self.optimizer.zero_grad()
@@ -209,9 +234,10 @@ class MeanTeacherEnsemble:
                 supervised_loss = sum(supervised_losses)
                 supervised_losses_logged.append(supervised_loss.detach().item() / len(self.student_models))
 
-                unsupervised_loss = torch.zeros(1)
+                unsupervised_loss = torch.zeros(1, device=self.device)
                 for _ in range(unlabeled_per_labeled):
                     xu = next(unlabeled_dataloader_iter)
+                    xu = xu.to(self.device)
                     with torch.no_grad():
                         preds_teachers = [teacher_model(xu) for teacher_model in self.teacher_models]
                     preds_students = [student_model(xu) for student_model in self.student_models]
@@ -244,15 +270,22 @@ class MeanTeacherEnsemble:
                 pbar.set_postfix(summary_dict)
                 
                 # Update final validation MSE
+                
                 final_val_mse = val_metrics['val_MSE']
                 
                 # Create result dict for this epoch
                 epoch_result = {
                     "epoch": epoch,
                     "val_MSE": float(val_metrics['val_MSE']),
-                    "supervised_loss": float(supervised_losses_logged)
+                    "supervised_loss": float(supervised_losses_logged),
+                    "alpha": alpha,
+                    "unlabeled_per_labeled": unlabeled_per_labeled
                 }
+                if trial_hyperparams is not None:   
+                    epoch_result.update(trial_hyperparams)
+                
                 all_results.append(epoch_result)
+                
                 
                 # Save to text file (append mode)
                 with open(results_dir / "mse_history.txt", "a") as f:

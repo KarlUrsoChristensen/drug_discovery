@@ -1,0 +1,10 @@
+{
+  "final_validation_mse": 0.07738650164433888,
+  "model_name": "mathilde",
+  "seed": 0,
+  "hidden_channels": "N/A",
+  "num_layers": "N/A",
+  "dropout": "N/A",
+  "learning_rate": 0.001,
+  "weight_decay": 0.005
+}

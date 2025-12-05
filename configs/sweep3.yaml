@@ -44,7 +44,7 @@ hydra:
     storage: null
     study_name: semi_supervised_sweep_mathilde
     
-    n_trials: 50
+    n_trials: 20
     n_jobs: 1
     
     sampler:
@@ -54,7 +54,7 @@ hydra:
     
     params:
       trainer.train.alpha: interval(0.9, 0.999)
-      trainer.train.unlabeled_per_labeled: choice(0, 1, 2, 3, 4)
+      trainer.train.unlabeled_per_labeled: choice(1, 2, 3, 4)
 
   mode: MULTIRUN
   verbose: true

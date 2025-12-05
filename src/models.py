@@ -237,9 +237,10 @@ class MathildeGCN(torch.nn.Module):
         return x
     
 class MatGCN(torch.nn.Module):
-    def __init__(self, num_node_features, hidden_channels, num_layers):
+    def __init__(self, num_node_features, hidden_channels, num_layers, dropout):
         super(MatGCN, self).__init__()
         self.num_layers = num_layers
+        self.dropout = dropout
         
         # Create conv and norm layers dynamically
         self.convs = torch.nn.ModuleList()
@@ -263,6 +264,7 @@ class MatGCN(torch.nn.Module):
         x = self.convs[0](x, edge_index)
         x = self.norms[0](x)
         x = x.relu()
+        x = F.dropout(x, p=self.dropout, training=self.training)
         
         # Remaining layers with skip connections
         for i in range(1, self.num_layers):
@@ -276,6 +278,7 @@ class MatGCN(torch.nn.Module):
             # ReLU (except for last layer if you want)
             if i < self.num_layers - 1:
                 x = x.relu()
+                x = F.dropout(x, p=self.dropout, training=self.training)
 
         # Readout layer
         x = global_mean_pool(x, batch)
